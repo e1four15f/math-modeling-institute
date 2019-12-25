@@ -4,3 +4,4 @@
 *.log
 *.out
 *.gz
+.ipynb_checkpoints
