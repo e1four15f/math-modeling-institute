@@ -5,6 +5,10 @@
 \usepackage[russian]{babel}
 \usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{makecell}
+\usepackage{xcolor}
+\usepackage{footnote}
+\makesavenoteenv{tabular}
 \usepackage[font=small,labelfont=bf]{caption}
 \graphicspath{ {img/} }
 
@@ -22,6 +26,14 @@
         Поэтому мы решили улучшить новостные фильтры, чтобы люди могли защитить себя,
         детей от негативного или неприемлемого контента.
 
+    \section{Практическая значимость}
+        Сегодня крупные компании, работающие с предоставлением информации, уже используют технологии персонализации, предлагая пользователям 
+        умные ленты новостей, подбор товаров в зависимости от информационных предпочтений и другие, как явные, так и неявные услуги.
+        Можно только догадываться, как на самом деле работают алгоритмы, используемые компаниями, потому что они составляют корпоративную тайну. 
+        Мы же продемонстрировали концептуальную часть этой системы, называемой "пузырем фильтров", с которой каждый из нас сталкивается буквально каждую минуту. 
+
+        тут картиначки из news, так нагляднее
+        
     \section{Обработка новостей}
         Мы использовали данные из открытых источников.\footnote{\href{https://www.kaggle.com/c/sentiment-analysis-in-russian}{https://www.kaggle.com/c/sentiment-analysis-in-russian}}
         Данные включают в себя 8263 различные новостные статьи с тремя различными метками оценки настроения: 
@@ -42,11 +54,10 @@
             \item Возьмём из новостей только русские слова
             \item Приведём все слова к нормальной форме через библиотеку pymorphy2\footnote{\href{https://pymorphy2.readthedocs.io}{https://pymorphy2.readthedocs.io}}.
             \item Не будем использовать новостные статьи, где больше 10000 символов
+            \item Модель не учитывает временную зависимость новостей
         \end{itemize}
 
         После данной обработки осталось 7732 статьи.
-        
-        Заметим, что модель не зависит от времени.
 
     \section{Проверка подходов}
         Мы попробуем два метода: 
@@ -202,19 +213,59 @@
             \end{tabular}
         \end{center}
 
-        Код экспериментов находится в открытом доступе\footnote{\href{https://github.com/e1four15f/math-modeling-institute}{https://github.com/e1four15f/math-modeling-institute}}
+    \section{Исследование модели}
+        
+        Хочется узнать, почему наша модель делает те или иные выводы про новости, на что модель обращает внимание,
+        какие у неё есть недостатки. Найдем и оценим новости с самыми популярными позитивными и негативными словами.
 
-    \section{Адекватность модели}
-        Проверим адекватность модели еще и эмпирически -- найдем и оценим новости с самыми популярными позитивными и негативными словами.
+        \subsection{Важность слов для модели}
+            Визуализируем веса логистической регрессии, тем самым покажем важность слов для каждой категории новостей (Рис. 5).
 
-        тут картиначки из news, так нагляднее
+            \begin{center}
+                \includegraphics[scale=0.8]{logreg_eli5}
+                \captionof{figure}{Веса логистической регрессии}
+            \end{center}
 
-        Проверка настроения новостей эмпирическим методом и сравнение моделей доказывает высокую точность определения настроения новостей нашим конечным методом.
+            По словам можно заметить, что выборка новостей из Казахстана и связана с политикой, это даёт сильное смещение, что не очень хорошо. 
+            Это можно видеть по словам: \textbf{бишимбаев}, \textbf{ергожин}, \textbf{ктж} (Казахстанские железные дороги).
+            Печально, что модель считает, что слова \textbf{взрыв} и \textbf{грипп} нейтральными. 
+            В позитивных словах не видно зависимостей.
+        
+        \subsection{Поведение на Зеленоградских новостях}
+            Мы решили проверить модель на Зеленоградских новостях.
+            Для сокращения, приведём только заголовок статьи и оставим ссылки на источник.
 
-    \section{Практическая значимость}
-        Сегодня крупные компании, работающие с предоставлением информации, уже используют технологии персонализации, предлагая пользователям 
-        умные ленты новостей, подбор товаров в зависимости от информационных предпочтений и другие, как явные, так и неявные услуги.
-        Можно только догадываться, как на самом деле работают алгоритмы, используемые компаниями, потому что они составляют корпоративную тайну. 
-        Мы же продемонстрировали концептуальную часть этой системы, называемой "пузырем фильтров", с которой каждый из нас сталкивается буквально каждую минуту. 
+            \textbf{Результаты модели на наших новостях}
+            \begin{center}
+                \begin{tabular}{|c|c|}
+                \hline
+                \textbf{Результат модели} & \textbf{Заголовок новости}\\ 
+                \hline
+                \colorbox{yellow}{neutral} & \makecell{На «зебре» у поликлиники автомобиль \\ наехал на женщину с ребенком\footnote{\href{https://www.netall.ru/incidents/news/1136839.html}{https://www.netall.ru/incidents/news/1136839.html}}}\\ 
+                \hline
+                \colorbox{red}{negative} & \makecell{Вандалов осудили за порчу детской \\ площадки и осквернение подъезда дома\footnote{\href{https://www.netall.ru/society/news/1136797.html}{https://www.netall.ru/society/news/1136797.html}}}\\
+                \hline
+                \colorbox{yellow}{neutral} & \makecell{В январе проезд по Новой Ленинградке \\ ночью с транспондером сделают бесплатным\footnote{\href{https://www.netall.ru/transport/news/1136717.html}{https://www.netall.ru/transport/news/1136717.html}}}\\
+                \hline
+                \colorbox{red}{negative} & \makecell{На новой «зебре» в 11-м микрорайоне \\ сбили ребенка\footnote{\href{https://www.netall.ru/incidents/news/1136624.html}{https://www.netall.ru/incidents/news/1136624.html}}}\\
+                \hline
+                \colorbox{yellow}{neutral} & \makecell{Очевидец заснял уснувшего перед \\ светофором таксиста\footnote{\href{https://www.netall.ru/incidents/news/1136580.html}{https://www.netall.ru/incidents/news/1136580.html}}}\\
+                \hline
+                \colorbox{green}{positive} & \makecell{Матвей Елисеев трижды попал в \\ тридцатку лучших на Кубке мира\footnote{\href{https://www.netall.ru/sport/news/1136564.html}{https://www.netall.ru/sport/news/1136564.html}}}\\
+                \hline
+                \colorbox{red}{negative} & \makecell{Женщине присудили 230 тысяч рублей \\ за падение на лестнице у ТЦ «Столица»\footnote{\href{https://www.netall.ru/society/news/1136381.html}{https://www.netall.ru/society/news/1136381.html}}}\\
+                \hline
+                \colorbox{yellow}{neutral} & \makecell{На месте регбийного поля у \\ 5-го микрорайона собираются построить стадион\footnote{\href{https://www.netall.ru/realty/news/1136372.html}{https://www.netall.ru/realty/news/1136372.html}}}\\
+                \hline
+                \colorbox{green}{positive} & \makecell{Врачи горбольницы спасли \\ девушку после ДТП и вернули ей возможность ходить\footnote{\href{https://www.netall.ru/medicine/news/1136287.html}{https://www.netall.ru/medicine/news/1136287.html}}}\\
+                \hline
+                \colorbox{yellow}{neutral} & \makecell{Власти Зеленограда одобрили \\ проект реновации 19-го микрорайона\footnote{\href{https://www.netall.ru/realty/news/1131857.html}{https://www.netall.ru/realty/news/1131857.html}}}\\
+                \hline
+                \end{tabular}
+            \end{center}
+
+            Проверка на небольшой выборке из 10 новостей эмпирическим методом доказывает хорошую точность определения настроения новостей.
+
+            Код экспериментов находится в открытом доступе\footnote{\href{https://github.com/e1four15f/math-modeling-institute}{https://github.com/e1four15f/math-modeling-institute}}
 
 \end{document}
